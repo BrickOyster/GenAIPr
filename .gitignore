@@ -1,0 +1,3 @@
+__pycache__
+data/visual_genome/raw
+data/visual_genome/preprocessed

@@ -1,29 +1,35 @@
+from transformers import BertModel, BertTokenizer
+import spacy
+from openie import StanfordOpenIE
 import torch
-from transformers import BertTokenizer, BertModel
-from transformers.utils import cached_file, WEIGHTS_NAME, CONFIG_NAME
 
 class BERTTextEncoder:
-    def __init__(self, model_name="bert-base-uncased", device=None):
-        # Set device to CUDA if available, else CPU
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        # Load the BERT tokenizer
-        self.tokenizer = BertTokenizer.from_pretrained(model_name)
-        # Load the BERT model and move it to the selected device
-        try:
-            # Check if model files are already cached
-            cached_file(model_name, WEIGHTS_NAME)
-            cached_file(model_name, CONFIG_NAME)
-            local_files_only = True
-        except Exception:
-            local_files_only = False
-        self.model = BertModel.from_pretrained(model_name, local_files_only=local_files_only).to(self.device)
-
-    def encode(self, text):
-        # Tokenize the input text and convert to PyTorch tensors
+    def __init__(self, device='cuda' if torch.cuda.is_available() else 'cpu'):
+        self.device = device
+        self.bert = BertModel.from_pretrained('bert-base-uncased').to(self.device)
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        self.nlp = spacy.load("en_core_web_sm")
+        self.openie = StanfordOpenIE()
+        
+    def get_sentence_embedding(self, text):
         inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True).to(self.device)
-        # Disable gradient calculation for inference
         with torch.no_grad():
-            # Get model outputs
-            outputs = self.model(**inputs)
-        # Return the embedding of the [CLS] token (first token)
-        return outputs.last_hidden_state[:, 0, :]
+            outputs = self.bert(**inputs)
+        return outputs.last_hidden_state.mean(dim=1).squeeze().cpu().numpy()
+    
+    def extract_triples(self, text):
+        doc = self.nlp(text)
+        triples = self.openie.annotate(text)
+        return triples
+    
+if __name__ == "__main__":
+    # Example usage
+    text = "A bed is near the window. A lamp is on the nightstand."
+    encoder = BERTTextEncoder()
+    embedding = encoder.get_sentence_embedding(text)
+    print("Sentence Embedding:", embedding)
+    triples = encoder.extract_triples(text)
+    print("Extracted Triples:")
+    for triple in triples:
+        print(f"Subject: {triple['subject']}, Relation: {triple['relation']}, Object: {triple['object']}")
+    pass

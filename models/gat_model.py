@@ -3,27 +3,40 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GATConv
 
-class GATLayoutPredictor(torch.nn.Module):
-    def __init__(
-        self,
-        in_channels=768,
-        hidden_channels=128,
-        out_channels=4,
-        heads=4,
-        dropout=0.2
-    ):
+class GATLayoutPredictor(nn.Module):
+    def __init__(self, num_node_features, num_edge_features, hidden_dim=128, heads=4, num_layers=3):
         super().__init__()
-        self.gat1 = GATConv(in_channels, hidden_channels, heads=heads, dropout=dropout)
-        self.gat2 = GATConv(hidden_channels * heads, hidden_channels, heads=heads, dropout=dropout)
-        self.gat3 = GATConv(hidden_channels * heads, hidden_channels, heads=1, concat=False, dropout=dropout)
-        self.dropout = dropout
+        self.num_layers = num_layers
+        self.node_embedding = nn.Embedding(num_node_features, hidden_dim)
+        
+        self.convs = nn.ModuleList()
+        for i in range(num_layers):
+            in_channels = hidden_dim if i == 0 else hidden_dim * heads
+            self.convs.append(GATConv(in_channels, hidden_dim, heads=heads, edge_dim=num_edge_features))
 
-    def forward(self, x, edge_index):
-        x = self.gat1(x, edge_index)
-        x = F.elu(x)
-        x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.gat2(x, edge_index)
-        x = F.elu(x)
-        x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.gat3(x, edge_index)
-        return x
+        # Final fully connected layer to predict layout parameters
+        self.fc = nn.Linear(hidden_dim * heads, 4)  # Predict x, y, width, height
+        
+    def forward(self, data):
+        device = next(self.parameters()).device
+        
+        # Handle node features
+        x = data.x.long().to(device)
+        x = self.node_embedding(x).squeeze(1)  # Remove extra dimension if needed
+        
+        # Handle edge features
+        edge_attr = None
+        if hasattr(data, 'edge_attr') and data.edge_attr is not None:
+            edge_attr = data.edge_attr.float().to(device)
+            if edge_attr.dim() == 1:
+                edge_attr = edge_attr.unsqueeze(-1)  # Ensure 2D shape
+                
+        edge_index = data.edge_index.to(device)
+        
+        # Apply GAT layers
+        for conv in self.convs:
+            x = conv(x, edge_index, edge_attr=edge_attr)
+            x = F.elu(x)
+        
+        # Global pooling and prediction
+        return torch.sigmoid(self.fc(x))

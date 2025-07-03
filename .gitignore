@@ -1,6 +1,5 @@
 __pycache__
 data/visual_genome/raw
 data/visual_genome/preprocessed
-checkpoints
 evaluation_results
 README.md

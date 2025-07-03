@@ -1,0 +1,14 @@
+brick@Bricky:~/GenAIPr$ python3 train_gat.py --data-path data/visual_genome/preprocessed/vg_processed.pt --checkpoint_dir checkpoints/gat_20250702_153518/
+
+Starting training on cuda
+Checkpoints saved to: /home/brick/GenAIPr/checkpoints/gat_20250702_195332
+Loading dataset from data/visual_genome/preprocessed/vg_processed.pt
+Dataset split: 0.75 train | 0.25 test
+Loaded 78072 samples
+Loading checkpoint from checkpoints/gat_20250702_153518/best_model.pt
+Resumed training from epoch 9 with loss 14.0665
+Training...: 100%|████████████████| 3903600/3903600 [15:44:31<00:00, 68.88samples/s, loss=14.2393]
+
+Training complete!
+Best loss: 14.0665
+Final loss: 14.2386

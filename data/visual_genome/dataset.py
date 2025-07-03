@@ -10,7 +10,8 @@ DOWNLOAD_URLS = [
     "https://homes.cs.washington.edu/~ranjay/visualgenome/data/dataset/image_data.json.zip"
 ]
 
-os.makedirs("raw", exist_ok=True)
+RAW_DIR = "raw"
+os.makedirs(RAW_DIR, exist_ok=True)
 
 def download_file(url, dest_folder):
     """Download a file with progress bar"""

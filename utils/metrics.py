@@ -18,12 +18,7 @@ def layout_loss(pred, target, eps=1e-8):
     target_size = torch.clamp(target[:, 2:], min=eps)
     size_loss = F.mse_loss(torch.log(pred_size), torch.log(target_size))
     
-    # 3. Center-of-mass penalty
-    pred_com = pred[:, :2].mean(dim=0)
-    target_com = target[:, :2].mean(dim=0)
-    com_loss = F.mse_loss(pred_com, target_com)
-    
-    total_loss = coord_loss + 0.3*size_loss + 0.7*com_loss
+    total_loss = coord_loss + 0.7*size_loss
     
     # Check for NaN before returning
     if torch.isnan(total_loss).any():
@@ -100,30 +95,6 @@ def node_edge_accuracy(pred_graph, gt_graph):
             )
     
     return node_acc, edge_acc
-
-def scene_graph_consistency(pred_graph, gt_graph):
-    """
-    Comprehensive scene graph evaluation
-    Returns dict with all metrics
-    """
-    metrics = {}
-    
-    # Basic accuracy metrics
-    metrics['node_accuracy'], metrics['edge_accuracy'] = node_edge_accuracy(pred_graph, gt_graph)
-    
-    # Graph structure metrics
-    metrics['graph_edit_distance'] = graph_edit_distance(pred_graph, gt_graph)
-    
-    # Positional metrics (if layouts exist)
-    if hasattr(gt_graph, 'layout') and hasattr(pred_graph, 'layout'):
-        ious = [
-            calculate_iou(p, g) 
-            for p, g in zip(pred_graph.layout, gt_graph.layout)
-        ]
-        metrics['mean_iou'] = np.mean(ious)
-        metrics['min_iou'] = np.min(ious)
-    
-    return metrics
 
 def clip_similarity(text, rendered_layout):
     """

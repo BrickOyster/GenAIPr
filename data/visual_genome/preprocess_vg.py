@@ -5,6 +5,24 @@ from torch_geometric.data import Data
 from tqdm import tqdm  # for progress bar
 
 def preprocess_visual_genome():
+    """
+    Preprocesses the Visual Genome dataset to generate graph-based representations for each image.
+    This function loads Visual Genome image metadata, object annotations, and relationship annotations from JSON files,
+    filters and validates the data, constructs graph structures suitable for PyTorch Geometric (PyG), and normalizes
+    bounding box coordinates. Each processed image is represented as a dictionary containing the graph, object layouts,
+    object names, object IDs, image ID, and image dimensions.
+    Returns:
+        List[dict]: A list of dictionaries, each containing:
+            - 'graph': PyG Data object with node features, edge indices, and edge attributes.
+            - 'layout': Tensor of normalized bounding box coordinates for valid objects.
+            - 'objects': List of object names (first name per object).
+            - 'object_ids': List of object IDs corresponding to valid objects.
+            - 'image_id': The image ID.
+            - 'width': Image width.
+            - 'height': Image height.
+    Prints:
+        The number of images skipped due to missing or invalid data.
+    """
     # Load all data first
     with open('raw/image_data.json') as f:
         image_data = json.load(f)

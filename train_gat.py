@@ -131,6 +131,7 @@ def train(args):
                     pbar.set_postfix(loss=f"{avg_loss:.4f}")
 
                 if epoch_samples % (dataset_size // 4) == 0:
+                    avg_loss = epoch_loss / epoch_samples if epoch_samples > 0 else 0
                     save_visualization(
                         objects, 
                         pred_layout.cpu(), 

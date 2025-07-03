@@ -1,0 +1,10 @@
+# Basic requirements for a GenAI project
+numpy
+scikit-learn
+torch
+transformers
+matplotlib
+tqdm
+torch_geometric
+stanford-openie
+networkx
